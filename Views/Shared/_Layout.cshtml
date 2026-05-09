@@ -1,0 +1,88 @@
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "Home";
+    var pageTitle = ViewData["Title"]?.ToString() ?? "Dashboard";
+    string Active(string controller) => string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@pageTitle - TechMove GLMS</title>
+    <script type="importmap"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/TechMoveLogisticsApplication.styles.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <a class="brand-lockup" asp-area="" asp-controller="Home" asp-action="Index">
+                <span class="brand-mark">TM</span>
+                <span>
+                    <strong>TechMove</strong>
+                    <small>Global Logistics</small>
+                </span>
+            </a>
+
+            <nav class="side-nav" aria-label="Main navigation">
+                <p class="nav-label">Main Menu</p>
+                <a class="@Active("Home")" asp-area="" asp-controller="Home" asp-action="Index">
+                    <span class="nav-icon">D</span>
+                    Dashboard
+                </a>
+                <a class="@Active("Clients")" asp-area="" asp-controller="Clients" asp-action="Index">
+                    <span class="nav-icon">CL</span>
+                    Clients
+                </a>
+                <a class="@Active("Contracts")" asp-area="" asp-controller="Contracts" asp-action="Index">
+                    <span class="nav-icon">CT</span>
+                    Contracts
+                </a>
+                <a class="@Active("ServiceRequests")" asp-area="" asp-controller="ServiceRequests" asp-action="Index">
+                    <span class="nav-icon">SR</span>
+                    Requests
+                </a>
+
+                <p class="nav-label">Internal Tools</p>
+                <a class="@Active("Invoices")" asp-area="" asp-controller="Invoices" asp-action="Index">
+                    <span class="nav-icon">IN</span>
+                    Invoices
+                </a>
+                <a class="@Active("Audit")" asp-area="" asp-controller="Audit" asp-action="Index">
+                    <span class="nav-icon">AU</span>
+                    Audit Logs
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <span class="system-dot"></span>
+                <span>Enterprise Prototype</span>
+            </div>
+        </aside>
+
+        <div class="workspace">
+            <header class="topbar">
+                <div>
+                    <p>Operations Command Center</p>
+                    <h1>@pageTitle</h1>
+                </div>
+                <div class="topbar-actions">
+                    <span class="search-pill">Search contracts, clients, requests</span>
+                    <a class="btn btn-primary" asp-controller="ServiceRequests" asp-action="Create">New Request</a>
+                </div>
+            </header>
+
+            <main role="main" class="page-content">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

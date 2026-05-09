@@ -1,0 +1,46 @@
+@model Contract
+
+@{
+    ViewData["Title"] = "Contract Details";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">@Model.ContractType contract</p>
+        <h1>@Model.Client?.Name</h1>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-primary" asp-action="Edit" asp-route-id="@Model.ContractId">Edit Contract</a>
+        @if (Model.SignedAgreementFileName is not null)
+        {
+            <a class="btn btn-outline-primary" asp-action="DownloadAgreement" asp-route-id="@Model.ContractId">Download Agreement</a>
+        }
+    </div>
+</section>
+
+<dl class="details-list">
+    <dt>Status</dt>
+    <dd>@Model.Status</dd>
+    <dt>Service Level</dt>
+    <dd>@Model.ServiceLevel</dd>
+    <dt>Date Range</dt>
+    <dd>@Model.StartDate.ToString("yyyy-MM-dd") - @Model.EndDate.ToString("yyyy-MM-dd")</dd>
+    <dt>Requests</dt>
+    <dd>@Model.ServiceRequests.Count</dd>
+    @if (Model is InternationalContract internationalContract)
+    {
+        <dt>Currency Rule</dt>
+        <dd>@internationalContract.CurrencyCode - @internationalContract.ExchangeRule</dd>
+    }
+    @if (Model is PremiumContract premiumContract)
+    {
+        <dt>Priority Level</dt>
+        <dd>@premiumContract.PriorityLevel</dd>
+    }
+</dl>
+
+<form asp-action="ChangeStatus" method="post" class="status-form">
+    <input type="hidden" name="id" value="@Model.ContractId" />
+    <select name="status" asp-items="Html.GetEnumSelectList<ContractStatus>()" class="form-select"></select>
+    <button type="submit" class="btn btn-outline-primary">Change Status</button>
+</form>

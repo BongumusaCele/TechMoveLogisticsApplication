@@ -1,0 +1,45 @@
+@model Client
+
+@{
+    ViewData["Title"] = "Client Details";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">@Model.Region</p>
+        <h1>@Model.Name</h1>
+    </div>
+    <a class="btn btn-primary" asp-controller="Contracts" asp-action="Create">New Contract</a>
+</section>
+
+<dl class="details-list">
+    <dt>Contact Details</dt>
+    <dd>@Model.ContactDetails</dd>
+    <dt>Contracts</dt>
+    <dd>@Model.Contracts.Count</dd>
+</dl>
+
+<h2 class="compact-heading">Contracts</h2>
+<div class="table-responsive">
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Service Level</th>
+                <th>End Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var contract in Model.Contracts)
+            {
+                <tr>
+                    <td>@contract.ContractType</td>
+                    <td>@contract.Status</td>
+                    <td>@contract.ServiceLevel</td>
+                    <td>@contract.EndDate.ToString("yyyy-MM-dd")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,44 @@
+@model ServiceRequestCreateViewModel
+
+@{
+    ViewData["Title"] = "New Service Request";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">Strategy validation and currency conversion</p>
+        <h1>New Service Request</h1>
+    </div>
+</section>
+
+<form asp-action="Create" method="post" class="form-panel">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="mb-3">
+        <label asp-for="ContractId" class="form-label"></label>
+        <select asp-for="ContractId" asp-items="Model.ContractOptions" class="form-select">
+            <option value="">Select active contract</option>
+        </select>
+        <span asp-validation-for="ContractId" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="RequestType" class="form-label"></label>
+        <input asp-for="RequestType" class="form-control" />
+        <span asp-validation-for="RequestType" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Description" class="form-label"></label>
+        <textarea asp-for="Description" rows="4" class="form-control"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="RequestedAmountUsd" class="form-label"></label>
+        <input asp-for="RequestedAmountUsd" class="form-control" />
+        <span asp-validation-for="RequestedAmountUsd" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit Request</button>
+    <a asp-action="Index" class="btn btn-link">Cancel</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

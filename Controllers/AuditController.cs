@@ -1,0 +1,25 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using TechMoveLogisticsApplication.Data;
+
+namespace TechMoveLogisticsApplication.Controllers;
+
+public class AuditController : Controller
+{
+    private readonly ApplicationDbContext _context;
+
+    public AuditController(ApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<IActionResult> Index()
+    {
+        var logs = await _context.AuditLogs
+            .OrderByDescending(log => log.CreatedAt)
+            .Take(100)
+            .ToListAsync();
+
+        return View(logs);
+    }
+}

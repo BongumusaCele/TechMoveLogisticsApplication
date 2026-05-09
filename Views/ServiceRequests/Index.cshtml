@@ -1,0 +1,43 @@
+@model IEnumerable<ServiceRequest>
+
+@{
+    ViewData["Title"] = "Service Requests";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">Validated workflow</p>
+        <h1>Service Requests</h1>
+    </div>
+    <a class="btn btn-primary" asp-action="Create">New Request</a>
+</section>
+
+<div class="table-responsive">
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>Client</th>
+                <th>Contract</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>USD</th>
+                <th>Rate</th>
+                <th>ZAR Cost</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var request in Model)
+            {
+                <tr>
+                    <td>@request.Contract?.Client?.Name</td>
+                    <td>@request.Contract?.ContractType</td>
+                    <td>@request.RequestType</td>
+                    <td><span class="status">@request.Status</span></td>
+                    <td>@request.RequestedAmountUsd.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("en-US"))</td>
+                    <td>@request.ExchangeRate.ToString("N4")</td>
+                    <td>@request.Cost.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("en-ZA"))</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,40 @@
+@model IEnumerable<Invoice>
+
+@{
+    ViewData["Title"] = "Invoices";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">Finance integration</p>
+        <h1>Invoices</h1>
+    </div>
+</section>
+
+<div class="table-responsive">
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>Invoice</th>
+                <th>Client</th>
+                <th>Request</th>
+                <th>Status</th>
+                <th>Amount</th>
+                <th>Issued</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var invoice in Model)
+            {
+                <tr>
+                    <td>#@invoice.InvoiceId</td>
+                    <td>@invoice.ServiceRequest?.Contract?.Client?.Name</td>
+                    <td>@invoice.ServiceRequest?.RequestType</td>
+                    <td><span class="status">@invoice.Status</span></td>
+                    <td>@invoice.AmountZar.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("en-ZA"))</td>
+                    <td>@invoice.IssuedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

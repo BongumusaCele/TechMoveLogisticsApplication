@@ -1,0 +1,38 @@
+@model IEnumerable<AuditLog>
+
+@{
+    ViewData["Title"] = "Audit";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">Observer event trail</p>
+        <h1>Audit Logs</h1>
+    </div>
+</section>
+
+<div class="table-responsive">
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Event</th>
+                <th>Contract</th>
+                <th>Request</th>
+                <th>Message</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var log in Model)
+            {
+                <tr>
+                    <td>@log.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>@log.EventType</td>
+                    <td>@log.ContractId</td>
+                    <td>@log.ServiceRequestId</td>
+                    <td>@log.Message</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
