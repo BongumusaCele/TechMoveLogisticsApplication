@@ -6,7 +6,7 @@ namespace TechMoveLogisticsApplication.Data;
 
 public static class DbInitializer
 {
-    public const string DefaultAdminEmail = "admin@techmove.local";
+    public const string DefaultAdminEmail = "musa@admin.co.za";
     public const string DefaultAdminPassword = "Admin@12345";
 
     public static async Task InitializeAsync(ApplicationDbContext context)
