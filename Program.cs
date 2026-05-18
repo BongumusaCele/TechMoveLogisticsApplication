@@ -7,6 +7,7 @@ using TechMoveLogisticsApplication.Services.Factories;
 using TechMoveLogisticsApplication.Services.Observers;
 using TechMoveLogisticsApplication.Services.Storage;
 using TechMoveLogisticsApplication.Services.Strategies;
+using TechMoveLogisticsApplication.Services.Workflow;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
@@ -43,6 +44,7 @@ builder.Services.AddScoped<TechMoveLogisticsApplication.Services.Strategies.Vali
 builder.Services.AddScoped<IInvoiceStrategy, LocalInvoiceStrategy>();
 builder.Services.AddScoped<IInvoiceStrategy, InternationalInvoiceStrategy>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
+builder.Services.AddScoped<IServiceRequestWorkflowService, ServiceRequestWorkflowService>();
 
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 builder.Services.AddHttpClient<ICurrencyConversionService, CurrencyConversionService>();

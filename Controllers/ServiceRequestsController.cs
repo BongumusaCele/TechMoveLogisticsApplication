@@ -3,9 +3,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using TechMoveLogisticsApplication.Data;
 using TechMoveLogisticsApplication.Models;
-using TechMoveLogisticsApplication.Services;
-using TechMoveLogisticsApplication.Services.Currency;
-using TechMoveLogisticsApplication.Services.Strategies;
+using TechMoveLogisticsApplication.Services.Workflow;
 using TechMoveLogisticsApplication.ViewModels;
 
 namespace TechMoveLogisticsApplication.Controllers;
@@ -13,20 +11,14 @@ namespace TechMoveLogisticsApplication.Controllers;
 public class ServiceRequestsController : Controller
 {
     private readonly ApplicationDbContext _context;
-    private readonly ICurrencyConversionService _currencyConversionService;
-    private readonly ValidationContext _validationContext;
-    private readonly IInvoiceService _invoiceService;
+    private readonly IServiceRequestWorkflowService _workflowService;
 
     public ServiceRequestsController(
         ApplicationDbContext context,
-        ICurrencyConversionService currencyConversionService,
-        ValidationContext validationContext,
-        IInvoiceService invoiceService)
+        IServiceRequestWorkflowService workflowService)
     {
         _context = context;
-        _currencyConversionService = currencyConversionService;
-        _validationContext = validationContext;
-        _invoiceService = invoiceService;
+        _workflowService = workflowService;
     }
 
     public async Task<IActionResult> Index()
@@ -49,56 +41,21 @@ public class ServiceRequestsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(ServiceRequestCreateViewModel viewModel)
     {
-        var contract = await _context.Contracts
-            .Include(item => item.Client)
-            .FirstOrDefaultAsync(item => item.ContractId == viewModel.ContractId);
-
-        if (contract is null)
-        {
-            ModelState.AddModelError(nameof(viewModel.ContractId), "Select a valid contract.");
-        }
-
-        if (!ModelState.IsValid || contract is null)
+        if (!ModelState.IsValid)
         {
             return View(await BuildCreateViewModelAsync(viewModel));
         }
 
-        var rate = await _currencyConversionService.GetUsdToZarRateAsync();
-        var request = new ServiceRequest
+        var result = await _workflowService.CreateApprovedRequestAsync(viewModel);
+        if (!result.Succeeded)
         {
-            ContractId = viewModel.ContractId,
-            RequestType = viewModel.RequestType,
-            Description = viewModel.Description,
-            RequestedAmountUsd = viewModel.RequestedAmountUsd,
-            CurrencyCode = "USD",
-            ExchangeRate = rate,
-            Cost = _currencyConversionService.ConvertUsdToZar(viewModel.RequestedAmountUsd, rate),
-            Status = ServiceRequestStatus.Approved
-        };
-
-        var validation = _validationContext.ValidateRequest(contract, request);
-        if (!validation.IsValid)
-        {
-            foreach (var error in validation.Errors)
+            foreach (var error in result.Errors)
             {
-                ModelState.AddModelError(string.Empty, error);
+                ModelState.AddModelError(error.FieldName ?? string.Empty, error.Message);
             }
 
             return View(await BuildCreateViewModelAsync(viewModel));
         }
-
-        _context.ServiceRequests.Add(request);
-        await _context.SaveChangesAsync();
-
-        _context.Invoices.Add(_invoiceService.CreateInvoice(request));
-        _context.AuditLogs.Add(new AuditLog
-        {
-            EventType = "Service Request Approved",
-            ContractId = request.ContractId,
-            ServiceRequestId = request.ServiceRequestId,
-            Message = $"Service request {request.ServiceRequestId} approved and converted at USD/ZAR rate {rate:N4}."
-        });
-        await _context.SaveChangesAsync();
 
         return RedirectToAction(nameof(Index));
     }

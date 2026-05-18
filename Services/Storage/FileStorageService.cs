@@ -7,6 +7,7 @@ public class FileStorageService : IFileStorageService
 {
     private readonly IWebHostEnvironment _environment;
     private const long MaxFileSize = 5 * 1024 * 1024;
+    private static readonly byte[] PdfSignature = "%PDF-"u8.ToArray();
 
     public FileStorageService(IWebHostEnvironment environment)
     {
@@ -29,6 +30,11 @@ public class FileStorageService : IFileStorageService
         if (!string.Equals(extension, ".pdf", StringComparison.OrdinalIgnoreCase))
         {
             return FileValidationResult.Failure("Only PDF signed agreements are allowed.");
+        }
+
+        if (!HasPdfSignature(file))
+        {
+            return FileValidationResult.Failure("The uploaded agreement must be a valid PDF file.");
         }
 
         return FileValidationResult.Success();
@@ -61,6 +67,36 @@ public class FileStorageService : IFileStorageService
 
     public string GetSignedAgreementPath(string fileName)
     {
-        return Path.Combine(_environment.WebRootPath, "uploads", "contracts", fileName);
+        var safeFileName = Path.GetFileName(fileName);
+        if (!string.Equals(safeFileName, fileName, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("Invalid agreement file name.");
+        }
+
+        var uploadsPath = Path.GetFullPath(Path.Combine(_environment.WebRootPath, "uploads", "contracts"));
+        var fullPath = Path.GetFullPath(Path.Combine(uploadsPath, safeFileName));
+
+        if (!fullPath.StartsWith(uploadsPath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Invalid agreement file path.");
+        }
+
+        return fullPath;
+    }
+
+    private static bool HasPdfSignature(IFormFile file)
+    {
+        try
+        {
+            using var stream = file.OpenReadStream();
+            var buffer = new byte[PdfSignature.Length];
+            var bytesRead = stream.Read(buffer, 0, buffer.Length);
+
+            return bytesRead == PdfSignature.Length && buffer.SequenceEqual(PdfSignature);
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

@@ -16,9 +16,11 @@ dotnet test Tests\Tests.csproj
 ## Current Test Coverage
 
 - Currency conversion math from USD to ZAR
-- PDF file validation
-- Rejection of restricted file types
-- Service request validation against invalid contract workflow states
+- Exchange-rate API success and fallback handling
+- Strict PDF file validation, including fake PDF content and traversal attempts
+- Service request validation against expired, on-hold, future-dated, and malformed requests
+- End-to-end service-request workflow behavior from approval to invoice and audit logging
+- Automated GitHub Actions test execution through `.github/workflows/dotnet-tests.yml`
 
 ## Visual Studio
 
@@ -35,4 +37,3 @@ Tests
 ```
 
 If the old `TechMoveLogisticsApplication.Tests` project still appears as load failed, remove it from Solution Explorer and reopen the solution.
-

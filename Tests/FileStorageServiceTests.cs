@@ -24,12 +24,35 @@ public class FileStorageServiceTests
     public void ValidateSignedAgreement_AllowsPdfFile()
     {
         var service = new FileStorageService(new TestWebHostEnvironment());
-        using var stream = new MemoryStream([1, 2, 3]);
+        using var stream = new MemoryStream("%PDF- test agreement"u8.ToArray());
         var file = new FormFile(stream, 0, stream.Length, "file", "contract.pdf");
 
         var result = service.ValidateSignedAgreement(file);
 
         Assert.True(result.IsValid);
+    }
+
+    [Fact]
+    public void ValidateSignedAgreement_RejectsFakePdfContent()
+    {
+        var service = new FileStorageService(new TestWebHostEnvironment());
+        using var stream = new MemoryStream("not a real pdf"u8.ToArray());
+        var file = new FormFile(stream, 0, stream.Length, "file", "contract.pdf");
+
+        var result = service.ValidateSignedAgreement(file);
+
+        Assert.False(result.IsValid);
+        Assert.Contains("valid PDF", result.ErrorMessage);
+    }
+
+    [Fact]
+    public void GetSignedAgreementPath_RejectsTraversalFileNames()
+    {
+        var service = new FileStorageService(new TestWebHostEnvironment());
+
+        var exception = Assert.Throws<InvalidOperationException>(() => service.GetSignedAgreementPath(@"..\secret.pdf"));
+
+        Assert.Contains("Invalid agreement file name", exception.Message);
     }
 
     private sealed class TestWebHostEnvironment : IWebHostEnvironment

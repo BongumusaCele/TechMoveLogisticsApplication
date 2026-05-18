@@ -4,7 +4,7 @@ using TechMoveLogisticsApplication.Models;
 
 namespace TechMoveLogisticsApplication.ViewModels;
 
-public class ContractCreateViewModel
+public class ContractCreateViewModel : IValidatableObject
 {
     [Required, Display(Name = "Client")]
     public int ClientId { get; set; }
@@ -28,4 +28,14 @@ public class ContractCreateViewModel
     public IFormFile? SignedAgreement { get; set; }
 
     public IEnumerable<SelectListItem> ClientOptions { get; set; } = Enumerable.Empty<SelectListItem>();
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (StartDate.Date > EndDate.Date)
+        {
+            yield return new ValidationResult(
+                "The contract end date must be on or after the start date.",
+                [nameof(EndDate)]);
+        }
+    }
 }
