@@ -314,9 +314,17 @@ a:hover {
 
 .metrics-grid {
   display: grid;
-  gap: 1rem;
+  gap: 1.35rem;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin-bottom: 1rem;
+  margin-bottom: 1.45rem;
+}
+
+.dashboard-section {
+  margin-bottom: 1.45rem;
+}
+
+.dashboard-section:last-child {
+  margin-bottom: 0;
 }
 
 .metric {
