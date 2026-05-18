@@ -164,6 +164,25 @@ The connection string is stored in `appsettings.json` and `appsettings.Developme
 
 The app uses Entity Framework Core `EnsureCreatedAsync`, so the database tables are created automatically when the app starts if the database is reachable.
 
+You can also create the SQL Server database manually from the provided scripts:
+
+```text
+DatabaseScripts/001_CreateTechMoveDB_Schema.sql
+```
+
+Run the script in SQL Server Management Studio, then start the application. On first startup the app seeds:
+
+- The default administrator account.
+- Prototype clients and contracts when the Clients table is empty.
+
+Optional reset script for demos:
+
+```text
+DatabaseScripts/002_ResetTechMoveDB_Data_Optional.sql
+```
+
+Only run the reset script if you intentionally want to clear prototype data.
+
 If you want to run without SQL Server temporarily, set this in `appsettings.json`:
 
 ```json
