@@ -55,6 +55,20 @@ TechMoveLogisticsApplication/
 
 ## Features
 
+### Authentication and Authorization
+
+- Cookie-based login, logout, and registration.
+- Registered users are assigned the `User` role by default.
+- A default `Admin` user is seeded automatically when the app starts.
+- The dashboard and audit logs are restricted to admin users.
+
+Default administrator login:
+
+```text
+Email: admin@techmove.local
+Password: Admin@12345
+```
+
 ### Dashboard
 
 - Displays operational totals for clients, contracts, service requests, invoices, and recent activity.
@@ -254,4 +268,3 @@ Only `.pdf` files are allowed for signed agreements. Files such as `.exe`, `.doc
 - Test project: `Tests\Tests.csproj`
 - Uploaded contract PDFs: `wwwroot/uploads/contracts`
 - Data protection keys: `App_Data/DataProtectionKeys`
-

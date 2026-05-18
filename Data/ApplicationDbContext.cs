@@ -14,6 +14,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<ServiceRequest> ServiceRequests => Set<ServiceRequest>();
     public DbSet<Invoice> Invoices => Set<Invoice>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<ApplicationUser> ApplicationUsers => Set<ApplicationUser>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -27,6 +28,17 @@ public class ApplicationDbContext : DbContext
             entity.Property(client => client.ContactDetails).HasMaxLength(200).IsRequired();
             entity.Property(client => client.Region).HasMaxLength(80).IsRequired();
             entity.HasIndex(client => client.Name);
+        });
+
+        modelBuilder.Entity<ApplicationUser>(entity =>
+        {
+            entity.ToTable("ApplicationUsers");
+            entity.HasKey(user => user.ApplicationUserId);
+            entity.Property(user => user.FullName).HasMaxLength(80).IsRequired();
+            entity.Property(user => user.Email).HasMaxLength(160).IsRequired();
+            entity.Property(user => user.PasswordHash).IsRequired();
+            entity.Property(user => user.Role).HasMaxLength(40).IsRequired();
+            entity.HasIndex(user => user.Email).IsUnique();
         });
 
         modelBuilder.Entity<Contract>()

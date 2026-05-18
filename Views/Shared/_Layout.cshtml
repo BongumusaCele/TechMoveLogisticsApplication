@@ -1,6 +1,8 @@
 @{
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "Home";
     var pageTitle = ViewData["Title"]?.ToString() ?? "Dashboard";
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var isAdmin = User.IsInRole("Admin");
     string Active(string controller) => string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase) ? "active" : "";
 }
 
@@ -16,22 +18,46 @@
     <link rel="stylesheet" href="~/TechMoveLogisticsApplication.styles.css" asp-append-version="true" />
 </head>
 <body>
-    <div class="app-shell">
+    @if (!isAuthenticated)
+    {
+        <main role="main" class="auth-shell">
+            @RenderBody()
+        </main>
+    }
+    else
+    {
+        <div class="app-shell">
         <aside class="sidebar">
-            <a class="brand-lockup" asp-area="" asp-controller="Home" asp-action="Index">
-                <span class="brand-mark">TM</span>
-                <span>
-                    <strong>TechMove</strong>
-                    <small>Global Logistics</small>
-                </span>
-            </a>
+            @if (isAdmin)
+            {
+                <a class="brand-lockup" asp-area="" asp-controller="Home" asp-action="Index">
+                    <span class="brand-mark">TM</span>
+                    <span>
+                        <strong>TechMove</strong>
+                        <small>Global Logistics</small>
+                    </span>
+                </a>
+            }
+            else
+            {
+                <a class="brand-lockup" asp-area="" asp-controller="Contracts" asp-action="Index">
+                    <span class="brand-mark">TM</span>
+                    <span>
+                        <strong>TechMove</strong>
+                        <small>Global Logistics</small>
+                    </span>
+                </a>
+            }
 
             <nav class="side-nav" aria-label="Main navigation">
                 <p class="nav-label">Main Menu</p>
-                <a class="@Active("Home")" asp-area="" asp-controller="Home" asp-action="Index">
-                    <span class="nav-icon">D</span>
-                    Dashboard
-                </a>
+                @if (isAdmin)
+                {
+                    <a class="@Active("Home")" asp-area="" asp-controller="Home" asp-action="Index">
+                        <span class="nav-icon">D</span>
+                        Dashboard
+                    </a>
+                }
                 <a class="@Active("Clients")" asp-area="" asp-controller="Clients" asp-action="Index">
                     <span class="nav-icon">CL</span>
                     Clients
@@ -50,35 +76,29 @@
                     <span class="nav-icon">IN</span>
                     Invoices
                 </a>
-                <a class="@Active("Audit")" asp-area="" asp-controller="Audit" asp-action="Index">
-                    <span class="nav-icon">AU</span>
-                    Audit Logs
-                </a>
+                @if (isAdmin)
+                {
+                    <a class="@Active("Audit")" asp-area="" asp-controller="Audit" asp-action="Index">
+                        <span class="nav-icon">AU</span>
+                        Audit Logs
+                    </a>
+                }
             </nav>
 
             <div class="sidebar-footer">
-                <span class="system-dot"></span>
-                <span>Enterprise Prototype</span>
+                <form asp-controller="Auth" asp-action="Logout" method="post" class="logout-form">
+                    <button type="submit" class="btn btn-outline-primary sidebar-signout">Sign Out</button>
+                </form>
             </div>
         </aside>
 
         <div class="workspace">
-            <header class="topbar">
-                <div>
-                    <p>Operations Command Center</p>
-                    <h1>@pageTitle</h1>
-                </div>
-                <div class="topbar-actions">
-                    <span class="search-pill">Search contracts, clients, requests</span>
-                    <a class="btn btn-primary" asp-controller="ServiceRequests" asp-action="Create">New Request</a>
-                </div>
-            </header>
-
             <main role="main" class="page-content">
                 @RenderBody()
             </main>
         </div>
     </div>
+    }
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>

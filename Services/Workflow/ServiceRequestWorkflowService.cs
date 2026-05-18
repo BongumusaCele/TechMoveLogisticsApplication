@@ -32,9 +32,15 @@ public class ServiceRequestWorkflowService : IServiceRequestWorkflowService
     {
         var result = new ServiceRequestCreationResult();
 
+        if (!viewModel.ContractId.HasValue)
+        {
+            result.AddError(nameof(viewModel.ContractId), "Select an active contract.");
+            return result;
+        }
+
         var contract = await _context.Contracts
             .Include(item => item.Client)
-            .FirstOrDefaultAsync(item => item.ContractId == viewModel.ContractId, cancellationToken);
+            .FirstOrDefaultAsync(item => item.ContractId == viewModel.ContractId.Value, cancellationToken);
 
         if (contract is null)
         {
@@ -44,7 +50,7 @@ public class ServiceRequestWorkflowService : IServiceRequestWorkflowService
 
         var request = new ServiceRequest
         {
-            ContractId = viewModel.ContractId,
+            ContractId = viewModel.ContractId.Value,
             RequestType = viewModel.RequestType,
             Description = viewModel.Description,
             RequestedAmountUsd = viewModel.RequestedAmountUsd,

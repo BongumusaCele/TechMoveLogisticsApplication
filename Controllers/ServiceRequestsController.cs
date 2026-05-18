@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,7 @@ using TechMoveLogisticsApplication.ViewModels;
 
 namespace TechMoveLogisticsApplication.Controllers;
 
+[Authorize]
 public class ServiceRequestsController : Controller
 {
     private readonly ApplicationDbContext _context;
@@ -46,7 +48,17 @@ public class ServiceRequestsController : Controller
             return View(await BuildCreateViewModelAsync(viewModel));
         }
 
-        var result = await _workflowService.CreateApprovedRequestAsync(viewModel);
+        ServiceRequestCreationResult result;
+        try
+        {
+            result = await _workflowService.CreateApprovedRequestAsync(viewModel);
+        }
+        catch (DbUpdateException)
+        {
+            ModelState.AddModelError(string.Empty, "The service request could not be saved. Check the details and try again.");
+            return View(await BuildCreateViewModelAsync(viewModel));
+        }
+
         if (!result.Succeeded)
         {
             foreach (var error in result.Errors)

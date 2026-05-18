@@ -36,92 +36,39 @@
     </div>
 </div>
 
-<div class="dashboard-grid">
-    <section class="panel panel-wide">
-        <div class="section-title">
-            <div>
-                <h2>Shipment Activity</h2>
-                <p>Requests and active contracts over the latest operating cycle</p>
-            </div>
-            <div class="segmented-control" aria-label="Chart period">
-                <span>1D</span>
-                <span>5D</span>
-                <strong>1M</strong>
-                <span>1Y</span>
-            </div>
+<section class="panel">
+    <div class="section-title">
+        <div>
+            <h2>Recent Contracts</h2>
+            <p>Latest agreements in the repository</p>
         </div>
-        <div class="chart-wrap" aria-label="Operations activity chart">
-            <svg viewBox="0 0 720 260" role="img" aria-labelledby="chartTitle">
-                <title id="chartTitle">Shipment and contract trend</title>
-                <defs>
-                    <linearGradient id="requestFill" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stop-color="#21c6b7" stop-opacity=".18" />
-                        <stop offset="100%" stop-color="#21c6b7" stop-opacity="0" />
-                    </linearGradient>
-                    <linearGradient id="contractFill" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stop-color="#366cf6" stop-opacity=".16" />
-                        <stop offset="100%" stop-color="#366cf6" stop-opacity="0" />
-                    </linearGradient>
-                </defs>
-                <g class="grid-lines">
-                    <line x1="40" y1="40" x2="690" y2="40" />
-                    <line x1="40" y1="90" x2="690" y2="90" />
-                    <line x1="40" y1="140" x2="690" y2="140" />
-                    <line x1="40" y1="190" x2="690" y2="190" />
-                    <line x1="40" y1="240" x2="690" y2="240" />
-                </g>
-                <path class="area-teal" d="M40 210 L120 175 L200 170 L280 115 L360 72 L440 84 L520 132 L600 94 L690 42 L690 240 L40 240 Z" />
-                <path class="area-blue" d="M40 230 L120 215 L200 188 L280 178 L360 135 L440 100 L520 126 L600 112 L690 64 L690 240 L40 240 Z" />
-                <polyline class="line-teal" points="40,210 120,175 200,170 280,115 360,72 440,84 520,132 600,94 690,42" />
-                <polyline class="line-blue" points="40,230 120,215 200,188 280,178 360,135 440,100 520,126 600,112 690,64" />
-                <g class="chart-labels">
-                    <text x="38" y="255">Week 1</text>
-                    <text x="250" y="255">Week 2</text>
-                    <text x="465" y="255">Week 3</text>
-                    <text x="640" y="255">Week 4</text>
-                </g>
-            </svg>
-            <div class="chart-legend">
-                <span><i class="legend-teal"></i> Requests</span>
-                <span><i class="legend-blue"></i> Contracts</span>
-            </div>
-        </div>
-    </section>
-
-    <section class="panel">
-        <div class="section-title">
-            <div>
-                <h2>Recent Contracts</h2>
-                <p>Latest agreements in the repository</p>
-            </div>
-            <a asp-controller="Contracts" asp-action="Index">All</a>
-        </div>
-        <div class="table-responsive flush-table">
-            <table class="table align-middle">
-                <thead>
+        <a asp-controller="Contracts" asp-action="Index">All</a>
+    </div>
+    <div class="table-responsive flush-table">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Client</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var contract in Model.RecentContracts)
+                {
                     <tr>
-                        <th>Client</th>
-                        <th>Type</th>
-                        <th>Status</th>
+                        <td>
+                            <strong>@contract.Client?.Name</strong>
+                            <small>@contract.EndDate.ToString("yyyy-MM-dd")</small>
+                        </td>
+                        <td>@contract.ContractType</td>
+                        <td><span class="status">@contract.Status</span></td>
                     </tr>
-                </thead>
-                <tbody>
-                    @foreach (var contract in Model.RecentContracts)
-                    {
-                        <tr>
-                            <td>
-                                <strong>@contract.Client?.Name</strong>
-                                <small>@contract.EndDate.ToString("yyyy-MM-dd")</small>
-                            </td>
-                            <td>@contract.ContractType</td>
-                            <td><span class="status">@contract.Status</span></td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    </section>
-</div>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
 
 <section class="panel">
     <div class="section-title">

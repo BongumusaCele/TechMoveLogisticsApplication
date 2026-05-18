@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,7 @@ using TechMoveLogisticsApplication.ViewModels;
 
 namespace TechMoveLogisticsApplication.Controllers;
 
+[Authorize]
 public class ContractsController : Controller
 {
     private readonly ApplicationDbContext _context;
@@ -29,32 +31,32 @@ public class ContractsController : Controller
         _contractSubject = contractSubject;
     }
 
-    public async Task<IActionResult> Index(DateTime? startDate, DateTime? endDate, ContractStatus? status)
+    public async Task<IActionResult> Index(ContractFilterViewModel viewModel)
     {
+        if (!ModelState.IsValid)
+        {
+            viewModel.Contracts = new List<Contract>();
+            return View(viewModel);
+        }
+
         var query = _context.Contracts.Include(contract => contract.Client).AsQueryable();
 
-        if (startDate.HasValue)
+        if (viewModel.StartDate.HasValue)
         {
-            query = query.Where(contract => contract.StartDate >= startDate.Value);
+            query = query.Where(contract => contract.StartDate >= viewModel.StartDate.Value);
         }
 
-        if (endDate.HasValue)
+        if (viewModel.EndDate.HasValue)
         {
-            query = query.Where(contract => contract.EndDate <= endDate.Value);
+            query = query.Where(contract => contract.EndDate <= viewModel.EndDate.Value);
         }
 
-        if (status.HasValue)
+        if (viewModel.Status.HasValue)
         {
-            query = query.Where(contract => contract.Status == status.Value);
+            query = query.Where(contract => contract.Status == viewModel.Status.Value);
         }
 
-        var viewModel = new ContractFilterViewModel
-        {
-            StartDate = startDate,
-            EndDate = endDate,
-            Status = status,
-            Contracts = await query.OrderByDescending(contract => contract.CreatedAt).ToListAsync()
-        };
+        viewModel.Contracts = await query.OrderByDescending(contract => contract.CreatedAt).ToListAsync();
 
         return View(viewModel);
     }
@@ -83,10 +85,17 @@ public class ContractsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(ContractCreateViewModel viewModel)
     {
+        viewModel.ServiceLevel = (viewModel.ServiceLevel ?? string.Empty).Trim();
+
         var fileValidation = _fileStorageService.ValidateSignedAgreement(viewModel.SignedAgreement);
         if (!fileValidation.IsValid)
         {
             ModelState.AddModelError(nameof(viewModel.SignedAgreement), fileValidation.ErrorMessage!);
+        }
+
+        if (viewModel.ClientId.HasValue && !await _context.Clients.AnyAsync(client => client.ClientId == viewModel.ClientId.Value))
+        {
+            ModelState.AddModelError(nameof(viewModel.ClientId), "Select an existing client.");
         }
 
         if (!ModelState.IsValid)
@@ -96,7 +105,7 @@ public class ContractsController : Controller
 
         var factory = _factoryResolver.Resolve(viewModel.ContractType);
         var contract = factory.CreateContract(
-            viewModel.ClientId,
+            viewModel.ClientId!.Value,
             viewModel.StartDate,
             viewModel.EndDate,
             viewModel.Status,
@@ -108,11 +117,30 @@ public class ContractsController : Controller
             return View(await BuildCreateViewModelAsync(viewModel));
         }
 
-        _context.Contracts.Add(contract);
-        await _context.SaveChangesAsync();
+        try
+        {
+            _context.Contracts.Add(contract);
+            await _context.SaveChangesAsync();
 
-        contract.SignedAgreementFileName = await _fileStorageService.SaveContractAgreementAsync(viewModel.SignedAgreement, contract.ContractId);
-        await _context.SaveChangesAsync();
+            try
+            {
+                contract.SignedAgreementFileName = await _fileStorageService.SaveContractAgreementAsync(viewModel.SignedAgreement, contract.ContractId);
+            }
+            catch (Exception exception) when (exception is InvalidOperationException or IOException)
+            {
+                _context.Contracts.Remove(contract);
+                await _context.SaveChangesAsync();
+                ModelState.AddModelError(nameof(viewModel.SignedAgreement), "The agreement file could not be saved. Upload a valid PDF and try again.");
+                return View(await BuildCreateViewModelAsync(viewModel));
+            }
+
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            ModelState.AddModelError(string.Empty, "The contract could not be saved. Check the details and try again.");
+            return View(await BuildCreateViewModelAsync(viewModel));
+        }
 
         await _contractSubject.NotifyAsync(new ContractEvent
         {
@@ -176,6 +204,8 @@ public class ContractsController : Controller
             return NotFound();
         }
 
+        viewModel.ServiceLevel = (viewModel.ServiceLevel ?? string.Empty).Trim();
+
         if (viewModel.SignedAgreement is { Length: > 0 })
         {
             var fileValidation = _fileStorageService.ValidateSignedAgreement(viewModel.SignedAgreement);
@@ -183,6 +213,11 @@ public class ContractsController : Controller
             {
                 ModelState.AddModelError(nameof(viewModel.SignedAgreement), fileValidation.ErrorMessage!);
             }
+        }
+
+        if (viewModel.ClientId.HasValue && !await _context.Clients.AnyAsync(client => client.ClientId == viewModel.ClientId.Value))
+        {
+            ModelState.AddModelError(nameof(viewModel.ClientId), "Select an existing client.");
         }
 
         if (!ModelState.IsValid)
@@ -193,7 +228,7 @@ public class ContractsController : Controller
         }
 
         var previousStatus = contract.Status;
-        contract.ClientId = viewModel.ClientId;
+        contract.ClientId = viewModel.ClientId!.Value;
         contract.StartDate = viewModel.StartDate;
         contract.EndDate = viewModel.EndDate;
         contract.Status = viewModel.Status;
@@ -220,10 +255,30 @@ public class ContractsController : Controller
 
         if (viewModel.SignedAgreement is { Length: > 0 })
         {
-            contract.SignedAgreementFileName = await _fileStorageService.SaveContractAgreementAsync(viewModel.SignedAgreement, contract.ContractId);
+            try
+            {
+                contract.SignedAgreementFileName = await _fileStorageService.SaveContractAgreementAsync(viewModel.SignedAgreement, contract.ContractId);
+            }
+            catch (Exception exception) when (exception is InvalidOperationException or IOException)
+            {
+                ModelState.AddModelError(nameof(viewModel.SignedAgreement), "The agreement file could not be saved. Upload a valid PDF and try again.");
+                viewModel.ContractType = contract.ContractType;
+                viewModel.ExistingAgreementFileName = contract.SignedAgreementFileName;
+                return View(await BuildEditViewModelAsync(viewModel));
+            }
         }
 
-        await _context.SaveChangesAsync();
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            ModelState.AddModelError(string.Empty, "The contract changes could not be saved. Check the details and try again.");
+            viewModel.ContractType = contract.ContractType;
+            viewModel.ExistingAgreementFileName = contract.SignedAgreementFileName;
+            return View(await BuildEditViewModelAsync(viewModel));
+        }
 
         await _contractSubject.NotifyAsync(new ContractEvent
         {
@@ -239,6 +294,12 @@ public class ContractsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ChangeStatus(int id, ContractStatus status)
     {
+        if (!Enum.IsDefined(status))
+        {
+            TempData["StatusError"] = "Select a valid contract status.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
         var contract = await _context.Contracts.FindAsync(id);
         if (contract is null)
         {
@@ -246,7 +307,15 @@ public class ContractsController : Controller
         }
 
         contract.Status = status;
-        await _context.SaveChangesAsync();
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            TempData["StatusError"] = "The contract status could not be updated. Try again.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
 
         await _contractSubject.NotifyAsync(new ContractEvent
         {
@@ -255,6 +324,7 @@ public class ContractsController : Controller
             EventType = "Contract Status Changed"
         });
 
+        TempData["StatusMessage"] = "Contract status updated successfully.";
         return RedirectToAction(nameof(Details), new { id });
     }
 
@@ -266,7 +336,16 @@ public class ContractsController : Controller
             return NotFound();
         }
 
-        var path = _fileStorageService.GetSignedAgreementPath(contract.SignedAgreementFileName);
+        string path;
+        try
+        {
+            path = _fileStorageService.GetSignedAgreementPath(contract.SignedAgreementFileName);
+        }
+        catch (InvalidOperationException)
+        {
+            return BadRequest("The agreement file reference is invalid.");
+        }
+
         if (!System.IO.File.Exists(path))
         {
             return NotFound();

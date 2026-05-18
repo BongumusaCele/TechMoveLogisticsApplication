@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TechMoveLogisticsApplication.Data;
@@ -5,6 +6,7 @@ using TechMoveLogisticsApplication.Models;
 
 namespace TechMoveLogisticsApplication.Controllers;
 
+[Authorize]
 public class ClientsController : Controller
 {
     private readonly ApplicationDbContext _context;
@@ -47,13 +49,30 @@ public class ClientsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(Client client)
     {
+        client.Name = (client.Name ?? string.Empty).Trim();
+        client.ContactDetails = (client.ContactDetails ?? string.Empty).Trim();
+        client.Region = (client.Region ?? string.Empty).Trim();
+
+        if (await _context.Clients.AnyAsync(item => item.Name == client.Name))
+        {
+            ModelState.AddModelError(nameof(client.Name), "A client with this name already exists.");
+        }
+
         if (!ModelState.IsValid)
         {
             return View(client);
         }
 
-        _context.Clients.Add(client);
-        await _context.SaveChangesAsync();
+        try
+        {
+            _context.Clients.Add(client);
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            ModelState.AddModelError(string.Empty, "The client could not be saved. Check the details and try again.");
+            return View(client);
+        }
 
         return RedirectToAction(nameof(Index));
     }

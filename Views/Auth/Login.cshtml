@@ -1,0 +1,51 @@
+@model LoginViewModel
+
+@{
+    ViewData["Title"] = "Sign In";
+}
+
+<section class="auth-panel">
+    <div class="auth-card">
+        <p class="eyebrow">Secure access</p>
+        <h1>Sign in to TechMove</h1>
+        <p class="heading-copy">Use your operations account to manage logistics contracts and requests.</p>
+
+        <form asp-action="Login" method="post" class="auth-form">
+            <input asp-for="ReturnUrl" type="hidden" />
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label"></label>
+                <input asp-for="Email" class="form-control" autocomplete="username" />
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label"></label>
+                <div class="password-field">
+                    <input asp-for="Password" class="form-control" autocomplete="current-password" />
+                    <button type="button" class="password-toggle" aria-label="Show password" title="Show password" data-password-toggle>
+                        <span class="toggle-eye" aria-hidden="true"></span>
+                    </button>
+                </div>
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
+
+            <div class="form-check mb-3">
+                <input asp-for="RememberMe" class="form-check-input" />
+                <label asp-for="RememberMe" class="form-check-label"></label>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Sign In</button>
+        </form>
+
+        <p class="auth-switch">
+            Need an account?
+            <a asp-action="Register">Create one</a>
+        </p>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

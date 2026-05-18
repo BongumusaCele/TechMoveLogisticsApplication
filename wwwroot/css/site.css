@@ -27,7 +27,7 @@ body {
     radial-gradient(circle at 82% 8%, rgba(47, 109, 246, .08), transparent 26rem),
     linear-gradient(135deg, #f8fafc 0%, var(--bg) 45%, #eef1f6 100%);
   color: var(--ink);
-  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  font-family: Aptos, "Segoe UI Variable Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   margin: 0;
   min-height: 100vh;
 }
@@ -43,7 +43,7 @@ a:hover {
 
 .btn {
   border-radius: 999px;
-  font-weight: 700;
+  font-weight: 600;
   min-height: 42px;
   padding: .55rem 1.05rem;
 }
@@ -112,7 +112,7 @@ a:hover {
   border-radius: 14px;
   color: #fff;
   display: inline-flex;
-  font-weight: 800;
+  font-weight: 700;
   height: 42px;
   justify-content: center;
   width: 42px;
@@ -143,7 +143,7 @@ a:hover {
 .nav-label {
   color: #98a2b3;
   font-size: .72rem;
-  font-weight: 800;
+  font-weight: 600;
   margin: .85rem .7rem .35rem;
   text-transform: uppercase;
 }
@@ -177,7 +177,7 @@ a:hover {
   border-radius: 10px;
   display: inline-flex;
   font-size: .68rem;
-  font-weight: 800;
+  font-weight: 600;
   height: 28px;
   justify-content: center;
   width: 32px;
@@ -189,10 +189,7 @@ a:hover {
 
 .sidebar-footer {
   align-items: center;
-  color: var(--muted);
   display: flex;
-  font-size: .84rem;
-  gap: .5rem;
   justify-content: center;
   min-height: 42px;
 }
@@ -226,13 +223,13 @@ a:hover {
 .topbar p {
   color: var(--muted);
   font-size: .82rem;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
 .topbar h1 {
   font-size: 1.4rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .topbar-actions {
@@ -284,7 +281,7 @@ a:hover {
   border-radius: 999px;
   color: #475467;
   font-size: .78rem;
-  font-weight: 800;
+  font-weight: 600;
   padding: .32rem .7rem;
 }
 
@@ -296,7 +293,7 @@ a:hover {
 
 .page-heading h1 {
   font-size: 2rem;
-  font-weight: 850;
+  font-weight: 700;
   line-height: 1.16;
   margin: 0;
 }
@@ -310,7 +307,7 @@ a:hover {
 .eyebrow {
   color: var(--blue);
   font-size: .76rem;
-  font-weight: 850;
+  font-weight: 600;
   margin: 0 0 .25rem;
   text-transform: uppercase;
 }
@@ -348,14 +345,14 @@ a:hover {
   color: var(--muted);
   display: block;
   font-size: .75rem;
-  font-weight: 800;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
 .metric strong {
   display: block;
   font-size: 2rem;
-  font-weight: 850;
+  font-weight: 700;
   letter-spacing: 0;
   line-height: 1.1;
   margin-top: .4rem;
@@ -426,7 +423,7 @@ a:hover {
 .section-title h2,
 .compact-heading {
   font-size: 1.05rem;
-  font-weight: 800;
+  font-weight: 700;
   margin: 0;
 }
 
@@ -505,7 +502,7 @@ a:hover {
 .chart-labels text {
   fill: #98a2b3;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .chart-legend {
@@ -520,7 +517,7 @@ a:hover {
   color: var(--muted);
   display: inline-flex;
   font-size: .82rem;
-  font-weight: 700;
+  font-weight: 600;
   gap: .4rem;
 }
 
@@ -558,7 +555,7 @@ a:hover {
   border-bottom: 1px solid var(--line);
   color: #98a2b3;
   font-size: .72rem;
-  font-weight: 850;
+  font-weight: 600;
   padding: .85rem .75rem;
   text-transform: uppercase;
 }
@@ -581,7 +578,7 @@ a:hover {
 
 .table td strong {
   color: var(--ink);
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .table td small {
@@ -597,7 +594,7 @@ a:hover {
   color: #1d4ed8;
   display: inline-block;
   font-size: .76rem;
-  font-weight: 800;
+  font-weight: 600;
   padding: .28rem .62rem;
   white-space: nowrap;
 }
@@ -620,7 +617,7 @@ a:hover {
 .form-label {
   color: #475467;
   font-size: .84rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .edit-contract-panel {
@@ -650,7 +647,7 @@ a:hover {
   color: var(--blue);
   display: inline-flex;
   font-size: .76rem;
-  font-weight: 850;
+  font-weight: 600;
   height: 34px;
   justify-content: center;
   width: 38px;
@@ -658,7 +655,7 @@ a:hover {
 
 .form-section-title h2 {
   font-size: 1.02rem;
-  font-weight: 850;
+  font-weight: 700;
   margin: 0;
 }
 
@@ -687,13 +684,13 @@ a:hover {
 .document-strip span {
   color: var(--muted);
   font-size: .78rem;
-  font-weight: 850;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
 .document-strip strong {
   color: var(--ink);
-  font-weight: 800;
+  font-weight: 700;
   overflow-wrap: anywhere;
 }
 
@@ -701,6 +698,110 @@ a:hover {
   border-top: 1px solid var(--line);
   margin-top: 1.25rem;
   padding-top: 1rem;
+}
+
+.auth-shell {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.auth-panel {
+  width: min(100%, 460px);
+}
+
+.auth-card {
+  background: rgba(255, 255, 255, .94);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  padding: 2rem;
+}
+
+.auth-card h1 {
+  font-size: 1.85rem;
+  font-weight: 700;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.auth-form {
+  margin-top: 1.35rem;
+}
+
+.auth-switch {
+  color: var(--muted);
+  margin: 1.1rem 0 0;
+  text-align: center;
+}
+
+.logout-form {
+  margin: 0;
+}
+
+.sidebar-signout {
+  width: 100%;
+}
+
+.password-field {
+  position: relative;
+}
+
+.password-field .form-control {
+  padding-right: 3rem;
+}
+
+.password-toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  color: #475467;
+  display: inline-flex;
+  height: 38px;
+  justify-content: center;
+  padding: 0;
+  position: absolute;
+  right: .35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+}
+
+.password-toggle:hover {
+  background: #eef3ff;
+  color: var(--blue);
+}
+
+.toggle-eye {
+  border: 2px solid currentColor;
+  border-radius: 70% 18%;
+  height: 16px;
+  transform: rotate(45deg);
+  width: 16px;
+}
+
+.toggle-eye::after {
+  background: currentColor;
+  border-radius: 50%;
+  content: "";
+  display: block;
+  height: 6px;
+  margin: 3px;
+  width: 6px;
+}
+
+.password-toggle.is-visible .toggle-eye::before {
+  background: currentColor;
+  content: "";
+  height: 22px;
+  left: 50%;
+  position: absolute;
+  top: -5px;
+  transform: rotate(90deg);
+  width: 2px;
 }
 
 .details-list {
@@ -711,7 +812,7 @@ a:hover {
 
 .details-list dt {
   color: var(--muted);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .details-list dd {

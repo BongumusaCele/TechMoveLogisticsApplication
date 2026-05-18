@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TechMoveLogisticsApplication.Data;
 
 namespace TechMoveLogisticsApplication.Controllers;
 
+[Authorize]
 public class InvoicesController : Controller
 {
     private readonly ApplicationDbContext _context;

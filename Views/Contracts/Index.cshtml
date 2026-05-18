@@ -12,20 +12,24 @@
     <a class="btn btn-primary" asp-action="Create">Create Contract</a>
 </section>
 
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
 <form method="get" class="filter-bar">
     <div>
         <label asp-for="StartDate" class="form-label"></label>
         <input asp-for="StartDate" type="date" class="form-control" />
+        <span asp-validation-for="StartDate" class="text-danger"></span>
     </div>
     <div>
         <label asp-for="EndDate" class="form-label"></label>
         <input asp-for="EndDate" type="date" class="form-control" />
+        <span asp-validation-for="EndDate" class="text-danger"></span>
     </div>
     <div>
         <label asp-for="Status" class="form-label"></label>
         <select asp-for="Status" asp-items="Html.GetEnumSelectList<ContractStatus>()" class="form-select">
             <option value="">Any status</option>
         </select>
+        <span asp-validation-for="Status" class="text-danger"></span>
     </div>
     <button type="submit" class="btn btn-outline-primary">Search</button>
 </form>
@@ -64,3 +68,7 @@
         </tbody>
     </table>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

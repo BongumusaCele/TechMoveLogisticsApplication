@@ -39,6 +39,16 @@
     }
 </dl>
 
+@if (TempData["StatusMessage"] is string statusMessage)
+{
+    <div class="alert alert-success mt-3">@statusMessage</div>
+}
+
+@if (TempData["StatusError"] is string statusError)
+{
+    <div class="alert alert-danger mt-3">@statusError</div>
+}
+
 <form asp-action="ChangeStatus" method="post" class="status-form">
     <input type="hidden" name="id" value="@Model.ContractId" />
     <select name="status" asp-items="Html.GetEnumSelectList<ContractStatus>()" class="form-select"></select>
