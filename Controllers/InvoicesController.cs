@@ -1,29 +1,29 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TechMoveLogisticsApplication.Data;
+using TechMoveLogisticsApplication.Models;
+using TechMoveLogisticsApplication.Services.Api;
 
 namespace TechMoveLogisticsApplication.Controllers;
 
 [Authorize]
 public class InvoicesController : Controller
 {
-    private readonly ApplicationDbContext _context;
+    private readonly ITechMoveApiClient _apiClient;
 
-    public InvoicesController(ApplicationDbContext context)
+    public InvoicesController(ITechMoveApiClient apiClient)
     {
-        _context = context;
+        _apiClient = apiClient;
     }
 
     public async Task<IActionResult> Index()
     {
-        var invoices = await _context.Invoices
-            .Include(invoice => invoice.ServiceRequest)
-            .ThenInclude(request => request!.Contract)
-            .ThenInclude(contract => contract!.Client)
-            .OrderByDescending(invoice => invoice.IssuedAt)
-            .ToListAsync();
+        var result = await _apiClient.GetInvoicesAsync();
+        if (!result.Succeeded || result.Value is null)
+        {
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Invoices could not be loaded from the API.");
+            return View(Enumerable.Empty<Invoice>());
+        }
 
-        return View(invoices);
+        return View(result.Value);
     }
 }

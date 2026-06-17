@@ -1,11 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using TechMoveLogisticsApplication.Data;
 using TechMoveLogisticsApplication.Models;
-using TechMoveLogisticsApplication.Services.Factories;
-using TechMoveLogisticsApplication.Services.Observers;
+using TechMoveLogisticsApplication.Services.Api;
 using TechMoveLogisticsApplication.Services.Storage;
 using TechMoveLogisticsApplication.ViewModels;
 
@@ -14,21 +11,15 @@ namespace TechMoveLogisticsApplication.Controllers;
 [Authorize]
 public class ContractsController : Controller
 {
-    private readonly ApplicationDbContext _context;
-    private readonly IContractFactoryResolver _factoryResolver;
+    private readonly ITechMoveApiClient _apiClient;
     private readonly IFileStorageService _fileStorageService;
-    private readonly IContractSubject _contractSubject;
 
     public ContractsController(
-        ApplicationDbContext context,
-        IContractFactoryResolver factoryResolver,
-        IFileStorageService fileStorageService,
-        IContractSubject contractSubject)
+        ITechMoveApiClient apiClient,
+        IFileStorageService fileStorageService)
     {
-        _context = context;
-        _factoryResolver = factoryResolver;
+        _apiClient = apiClient;
         _fileStorageService = fileStorageService;
-        _contractSubject = contractSubject;
     }
 
     public async Task<IActionResult> Index(ContractFilterViewModel viewModel)
@@ -39,41 +30,27 @@ public class ContractsController : Controller
             return View(viewModel);
         }
 
-        var query = _context.Contracts.Include(contract => contract.Client).AsQueryable();
-
-        if (viewModel.StartDate.HasValue)
+        var result = await _apiClient.GetContractsAsync(viewModel.StartDate, viewModel.EndDate, viewModel.Status);
+        if (!result.Succeeded || result.Value is null)
         {
-            query = query.Where(contract => contract.StartDate >= viewModel.StartDate.Value);
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Contracts could not be loaded from the API.");
+            viewModel.Contracts = new List<Contract>();
+            return View(viewModel);
         }
 
-        if (viewModel.EndDate.HasValue)
-        {
-            query = query.Where(contract => contract.EndDate <= viewModel.EndDate.Value);
-        }
-
-        if (viewModel.Status.HasValue)
-        {
-            query = query.Where(contract => contract.Status == viewModel.Status.Value);
-        }
-
-        viewModel.Contracts = await query.OrderByDescending(contract => contract.CreatedAt).ToListAsync();
-
+        viewModel.Contracts = result.Value.ToList();
         return View(viewModel);
     }
 
     public async Task<IActionResult> Details(int id)
     {
-        var contract = await _context.Contracts
-            .Include(item => item.Client)
-            .Include(item => item.ServiceRequests)
-            .FirstOrDefaultAsync(item => item.ContractId == id);
-
-        if (contract is null)
+        var result = await _apiClient.GetContractAsync(id);
+        if (!result.Succeeded || result.Value is null)
         {
             return NotFound();
         }
 
-        return View(contract);
+        return View(result.Value);
     }
 
     public async Task<IActionResult> Create()
@@ -93,76 +70,30 @@ public class ContractsController : Controller
             ModelState.AddModelError(nameof(viewModel.SignedAgreement), fileValidation.ErrorMessage!);
         }
 
-        if (viewModel.ClientId.HasValue && !await _context.Clients.AnyAsync(client => client.ClientId == viewModel.ClientId.Value))
-        {
-            ModelState.AddModelError(nameof(viewModel.ClientId), "Select an existing client.");
-        }
-
         if (!ModelState.IsValid)
         {
             return View(await BuildCreateViewModelAsync(viewModel));
         }
 
-        var factory = _factoryResolver.Resolve(viewModel.ContractType);
-        var contract = factory.CreateContract(
-            viewModel.ClientId!.Value,
-            viewModel.StartDate,
-            viewModel.EndDate,
-            viewModel.Status,
-            viewModel.ServiceLevel);
-
-        if (!contract.Validate())
+        var result = await _apiClient.CreateContractAsync(viewModel);
+        if (!result.Succeeded || result.Value is null)
         {
-            ModelState.AddModelError(string.Empty, "The contract failed business validation.");
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "The contract could not be created through the API.");
             return View(await BuildCreateViewModelAsync(viewModel));
         }
 
-        try
-        {
-            _context.Contracts.Add(contract);
-            await _context.SaveChangesAsync();
-
-            try
-            {
-                contract.SignedAgreementFileName = await _fileStorageService.SaveContractAgreementAsync(viewModel.SignedAgreement, contract.ContractId);
-            }
-            catch (Exception exception) when (exception is InvalidOperationException or IOException)
-            {
-                _context.Contracts.Remove(contract);
-                await _context.SaveChangesAsync();
-                ModelState.AddModelError(nameof(viewModel.SignedAgreement), "The agreement file could not be saved. Upload a valid PDF and try again.");
-                return View(await BuildCreateViewModelAsync(viewModel));
-            }
-
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateException)
-        {
-            ModelState.AddModelError(string.Empty, "The contract could not be saved. Check the details and try again.");
-            return View(await BuildCreateViewModelAsync(viewModel));
-        }
-
-        await _contractSubject.NotifyAsync(new ContractEvent
-        {
-            ContractId = contract.ContractId,
-            Status = contract.Status,
-            EventType = "Contract Created"
-        });
-
-        return RedirectToAction(nameof(Details), new { id = contract.ContractId });
+        return RedirectToAction(nameof(Details), new { id = result.Value.ContractId });
     }
 
     public async Task<IActionResult> Edit(int id)
     {
-        var contract = await _context.Contracts
-            .Include(item => item.Client)
-            .FirstOrDefaultAsync(item => item.ContractId == id);
-
-        if (contract is null)
+        var result = await _apiClient.GetContractAsync(id);
+        if (!result.Succeeded || result.Value is null)
         {
             return NotFound();
         }
 
+        var contract = result.Value;
         var viewModel = new ContractEditViewModel
         {
             ContractId = contract.ContractId,
@@ -198,12 +129,6 @@ public class ContractsController : Controller
             return NotFound();
         }
 
-        var contract = await _context.Contracts.FindAsync(id);
-        if (contract is null)
-        {
-            return NotFound();
-        }
-
         viewModel.ServiceLevel = (viewModel.ServiceLevel ?? string.Empty).Trim();
 
         if (viewModel.SignedAgreement is { Length: > 0 })
@@ -215,79 +140,19 @@ public class ContractsController : Controller
             }
         }
 
-        if (viewModel.ClientId.HasValue && !await _context.Clients.AnyAsync(client => client.ClientId == viewModel.ClientId.Value))
-        {
-            ModelState.AddModelError(nameof(viewModel.ClientId), "Select an existing client.");
-        }
-
         if (!ModelState.IsValid)
         {
-            viewModel.ContractType = contract.ContractType;
-            viewModel.ExistingAgreementFileName = contract.SignedAgreementFileName;
             return View(await BuildEditViewModelAsync(viewModel));
         }
 
-        var previousStatus = contract.Status;
-        contract.ClientId = viewModel.ClientId!.Value;
-        contract.StartDate = viewModel.StartDate;
-        contract.EndDate = viewModel.EndDate;
-        contract.Status = viewModel.Status;
-        contract.ServiceLevel = viewModel.ServiceLevel;
-
-        if (contract is InternationalContract internationalContract)
+        var result = await _apiClient.UpdateContractAsync(id, viewModel);
+        if (!result.Succeeded || result.Value is null)
         {
-            internationalContract.CurrencyCode = (viewModel.CurrencyCode ?? "USD").ToUpperInvariant();
-            internationalContract.ExchangeRule = viewModel.ExchangeRule ?? "Use external exchange API and store local ZAR cost";
-        }
-
-        if (contract is PremiumContract premiumContract)
-        {
-            premiumContract.PriorityLevel = viewModel.PriorityLevel ?? 1;
-        }
-
-        if (!contract.Validate())
-        {
-            ModelState.AddModelError(string.Empty, "The contract failed business validation. Check the date range and contract-specific fields.");
-            viewModel.ContractType = contract.ContractType;
-            viewModel.ExistingAgreementFileName = contract.SignedAgreementFileName;
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "The contract could not be updated through the API.");
             return View(await BuildEditViewModelAsync(viewModel));
         }
 
-        if (viewModel.SignedAgreement is { Length: > 0 })
-        {
-            try
-            {
-                contract.SignedAgreementFileName = await _fileStorageService.SaveContractAgreementAsync(viewModel.SignedAgreement, contract.ContractId);
-            }
-            catch (Exception exception) when (exception is InvalidOperationException or IOException)
-            {
-                ModelState.AddModelError(nameof(viewModel.SignedAgreement), "The agreement file could not be saved. Upload a valid PDF and try again.");
-                viewModel.ContractType = contract.ContractType;
-                viewModel.ExistingAgreementFileName = contract.SignedAgreementFileName;
-                return View(await BuildEditViewModelAsync(viewModel));
-            }
-        }
-
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateException)
-        {
-            ModelState.AddModelError(string.Empty, "The contract changes could not be saved. Check the details and try again.");
-            viewModel.ContractType = contract.ContractType;
-            viewModel.ExistingAgreementFileName = contract.SignedAgreementFileName;
-            return View(await BuildEditViewModelAsync(viewModel));
-        }
-
-        await _contractSubject.NotifyAsync(new ContractEvent
-        {
-            ContractId = contract.ContractId,
-            Status = contract.Status,
-            EventType = previousStatus == contract.Status ? "Contract Updated" : "Contract Status Changed"
-        });
-
-        return RedirectToAction(nameof(Details), new { id = contract.ContractId });
+        return RedirectToAction(nameof(Details), new { id = result.Value.ContractId });
     }
 
     [HttpPost]
@@ -300,29 +165,12 @@ public class ContractsController : Controller
             return RedirectToAction(nameof(Details), new { id });
         }
 
-        var contract = await _context.Contracts.FindAsync(id);
-        if (contract is null)
+        var result = await _apiClient.UpdateContractStatusAsync(id, status);
+        if (!result.Succeeded)
         {
-            return NotFound();
-        }
-
-        contract.Status = status;
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateException)
-        {
-            TempData["StatusError"] = "The contract status could not be updated. Try again.";
+            TempData["StatusError"] = result.ErrorMessage ?? "The contract status could not be updated through the API.";
             return RedirectToAction(nameof(Details), new { id });
         }
-
-        await _contractSubject.NotifyAsync(new ContractEvent
-        {
-            ContractId = contract.ContractId,
-            Status = contract.Status,
-            EventType = "Contract Status Changed"
-        });
 
         TempData["StatusMessage"] = "Contract status updated successfully.";
         return RedirectToAction(nameof(Details), new { id });
@@ -330,47 +178,36 @@ public class ContractsController : Controller
 
     public async Task<IActionResult> DownloadAgreement(int id)
     {
-        var contract = await _context.Contracts.FindAsync(id);
-        if (contract?.SignedAgreementFileName is null)
+        var result = await _apiClient.DownloadAgreementAsync(id);
+        if (!result.Succeeded || result.Value is null)
         {
             return NotFound();
         }
 
-        string path;
-        try
-        {
-            path = _fileStorageService.GetSignedAgreementPath(contract.SignedAgreementFileName);
-        }
-        catch (InvalidOperationException)
-        {
-            return BadRequest("The agreement file reference is invalid.");
-        }
-
-        if (!System.IO.File.Exists(path))
-        {
-            return NotFound();
-        }
-
-        return PhysicalFile(path, "application/pdf", contract.SignedAgreementFileName);
+        return File(result.Value.Content, result.Value.ContentType, result.Value.FileName);
     }
 
     private async Task<ContractCreateViewModel> BuildCreateViewModelAsync(ContractCreateViewModel viewModel)
     {
-        viewModel.ClientOptions = await _context.Clients
-            .OrderBy(client => client.Name)
-            .Select(client => new SelectListItem(client.Name, client.ClientId.ToString()))
-            .ToListAsync();
-
+        viewModel.ClientOptions = await BuildClientOptionsAsync();
         return viewModel;
     }
 
     private async Task<ContractEditViewModel> BuildEditViewModelAsync(ContractEditViewModel viewModel)
     {
-        viewModel.ClientOptions = await _context.Clients
-            .OrderBy(client => client.Name)
-            .Select(client => new SelectListItem(client.Name, client.ClientId.ToString()))
-            .ToListAsync();
-
+        viewModel.ClientOptions = await BuildClientOptionsAsync();
         return viewModel;
+    }
+
+    private async Task<IEnumerable<SelectListItem>> BuildClientOptionsAsync()
+    {
+        var result = await _apiClient.GetClientsAsync();
+        if (!result.Succeeded || result.Value is null)
+        {
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Clients could not be loaded from the API.");
+            return Enumerable.Empty<SelectListItem>();
+        }
+
+        return result.Value.Select(client => new SelectListItem(client.Name, client.ClientId.ToString())).ToList();
     }
 }

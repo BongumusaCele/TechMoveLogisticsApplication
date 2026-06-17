@@ -1,14 +1,8 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using TechMoveLogisticsApplication.Data;
 using TechMoveLogisticsApplication.Services;
-using TechMoveLogisticsApplication.Services.Currency;
-using TechMoveLogisticsApplication.Services.Factories;
-using TechMoveLogisticsApplication.Services.Observers;
+using TechMoveLogisticsApplication.Services.Api;
 using TechMoveLogisticsApplication.Services.Storage;
-using TechMoveLogisticsApplication.Services.Strategies;
-using TechMoveLogisticsApplication.Services.Workflow;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
@@ -31,64 +25,15 @@ builder.Services.AddAuthorization(options =>
 });
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "App_Data", "DataProtectionKeys")));
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-{
-    if (builder.Configuration.GetValue<bool>("UsePrototypeMemoryStore"))
-    {
-        options.UseInMemoryDatabase("TechMoveGlmsPrototype");
-    }
-    else
-    {
-        options.UseSqlServer(
-            builder.Configuration.GetConnectionString("DefaultConnection"),
-            sqlOptions => sqlOptions.EnableRetryOnFailure(maxRetryCount: 1));
-    }
-});
-
-builder.Services.AddScoped<IContractFactory, StandardContractFactory>();
-builder.Services.AddScoped<IContractFactory, InternationalContractFactory>();
-builder.Services.AddScoped<IContractFactory, PremiumContractFactory>();
-builder.Services.AddScoped<IContractFactoryResolver, ContractFactoryResolver>();
-
-builder.Services.AddScoped<IValidationStrategy, ActiveContractValidationStrategy>();
-builder.Services.AddScoped<IValidationStrategy, SlaValidationStrategy>();
-builder.Services.AddScoped<IValidationStrategy, InternationalRequestValidationStrategy>();
-builder.Services.AddScoped<TechMoveLogisticsApplication.Services.Strategies.ValidationContext>();
-
-builder.Services.AddScoped<IInvoiceStrategy, LocalInvoiceStrategy>();
-builder.Services.AddScoped<IInvoiceStrategy, InternationalInvoiceStrategy>();
-builder.Services.AddScoped<IInvoiceService, InvoiceService>();
-builder.Services.AddScoped<IServiceRequestWorkflowService, ServiceRequestWorkflowService>();
-
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
-builder.Services.AddHttpClient<ICurrencyConversionService, CurrencyConversionService>();
-
-builder.Services.AddScoped<NotificationService>();
-builder.Services.AddScoped<AuditService>();
-builder.Services.AddScoped<SlaMonitoringService>();
-builder.Services.AddScoped<IContractSubject>(provider =>
+builder.Services.AddHttpClient<ITechMoveApiClient, TechMoveApiClient>(client =>
 {
-    var subject = new ContractSubject();
-    subject.Attach(provider.GetRequiredService<NotificationService>());
-    subject.Attach(provider.GetRequiredService<AuditService>());
-    subject.Attach(provider.GetRequiredService<SlaMonitoringService>());
-    return subject;
+    var baseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "http://localhost:5014/";
+    client.BaseAddress = new Uri(baseUrl);
+    client.Timeout = TimeSpan.FromSeconds(30);
 });
 
 var app = builder.Build();
-
-using (var scope = app.Services.CreateScope())
-{
-    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    try
-    {
-        await DbInitializer.InitializeAsync(context);
-    }
-    catch (Exception exception)
-    {
-        Console.Error.WriteLine($"Database initialization failed: {exception.Message}");
-    }
-}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

@@ -1,43 +1,36 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TechMoveLogisticsApplication.Data;
 using TechMoveLogisticsApplication.Models;
+using TechMoveLogisticsApplication.Services.Api;
 
 namespace TechMoveLogisticsApplication.Controllers;
 
 [Authorize]
 public class ClientsController : Controller
 {
-    private readonly ApplicationDbContext _context;
+    private readonly ITechMoveApiClient _apiClient;
 
-    public ClientsController(ApplicationDbContext context)
+    public ClientsController(ITechMoveApiClient apiClient)
     {
-        _context = context;
+        _apiClient = apiClient;
     }
 
     public async Task<IActionResult> Index()
     {
-        var clients = await _context.Clients
-            .Include(client => client.Contracts)
-            .OrderBy(client => client.Name)
-            .ToListAsync();
+        var result = await _apiClient.GetClientListAsync();
+        if (!result.Succeeded || result.Value is null)
+        {
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Clients could not be loaded from the API.");
+            return View(Enumerable.Empty<Client>());
+        }
 
-        return View(clients);
+        return View(result.Value);
     }
 
     public async Task<IActionResult> Details(int id)
     {
-        var client = await _context.Clients
-            .Include(item => item.Contracts)
-            .FirstOrDefaultAsync(item => item.ClientId == id);
-
-        if (client is null)
-        {
-            return NotFound();
-        }
-
-        return View(client);
+        var result = await _apiClient.GetClientAsync(id);
+        return result.Succeeded && result.Value is not null ? View(result.Value) : NotFound();
     }
 
     public IActionResult Create()
@@ -53,24 +46,15 @@ public class ClientsController : Controller
         client.ContactDetails = (client.ContactDetails ?? string.Empty).Trim();
         client.Region = (client.Region ?? string.Empty).Trim();
 
-        if (await _context.Clients.AnyAsync(item => item.Name == client.Name))
-        {
-            ModelState.AddModelError(nameof(client.Name), "A client with this name already exists.");
-        }
-
         if (!ModelState.IsValid)
         {
             return View(client);
         }
 
-        try
+        var result = await _apiClient.CreateClientAsync(client);
+        if (!result.Succeeded)
         {
-            _context.Clients.Add(client);
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateException)
-        {
-            ModelState.AddModelError(string.Empty, "The client could not be saved. Check the details and try again.");
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "The client could not be created through the API.");
             return View(client);
         }
 

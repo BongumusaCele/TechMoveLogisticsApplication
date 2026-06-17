@@ -1,10 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using TechMoveLogisticsApplication.Data;
 using TechMoveLogisticsApplication.Models;
-using TechMoveLogisticsApplication.Services.Workflow;
+using TechMoveLogisticsApplication.Services.Api;
 using TechMoveLogisticsApplication.ViewModels;
 
 namespace TechMoveLogisticsApplication.Controllers;
@@ -12,26 +10,23 @@ namespace TechMoveLogisticsApplication.Controllers;
 [Authorize]
 public class ServiceRequestsController : Controller
 {
-    private readonly ApplicationDbContext _context;
-    private readonly IServiceRequestWorkflowService _workflowService;
+    private readonly ITechMoveApiClient _apiClient;
 
-    public ServiceRequestsController(
-        ApplicationDbContext context,
-        IServiceRequestWorkflowService workflowService)
+    public ServiceRequestsController(ITechMoveApiClient apiClient)
     {
-        _context = context;
-        _workflowService = workflowService;
+        _apiClient = apiClient;
     }
 
     public async Task<IActionResult> Index()
     {
-        var requests = await _context.ServiceRequests
-            .Include(request => request.Contract)
-            .ThenInclude(contract => contract!.Client)
-            .OrderByDescending(request => request.CreatedAt)
-            .ToListAsync();
+        var result = await _apiClient.GetServiceRequestsAsync();
+        if (!result.Succeeded || result.Value is null)
+        {
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Service requests could not be loaded from the API.");
+            return View(Enumerable.Empty<ServiceRequest>());
+        }
 
-        return View(requests);
+        return View(result.Value);
     }
 
     public async Task<IActionResult> Create()
@@ -48,24 +43,10 @@ public class ServiceRequestsController : Controller
             return View(await BuildCreateViewModelAsync(viewModel));
         }
 
-        ServiceRequestCreationResult result;
-        try
-        {
-            result = await _workflowService.CreateApprovedRequestAsync(viewModel);
-        }
-        catch (DbUpdateException)
-        {
-            ModelState.AddModelError(string.Empty, "The service request could not be saved. Check the details and try again.");
-            return View(await BuildCreateViewModelAsync(viewModel));
-        }
-
+        var result = await _apiClient.CreateServiceRequestAsync(viewModel);
         if (!result.Succeeded)
         {
-            foreach (var error in result.Errors)
-            {
-                ModelState.AddModelError(error.FieldName ?? string.Empty, error.Message);
-            }
-
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "The service request could not be created through the API.");
             return View(await BuildCreateViewModelAsync(viewModel));
         }
 
@@ -74,14 +55,20 @@ public class ServiceRequestsController : Controller
 
     private async Task<ServiceRequestCreateViewModel> BuildCreateViewModelAsync(ServiceRequestCreateViewModel viewModel)
     {
-        viewModel.ContractOptions = await _context.Contracts
-            .Include(contract => contract.Client)
-            .Where(contract => contract.Status == ContractStatus.Active)
-            .OrderBy(contract => contract.Client!.Name)
+        var contracts = await _apiClient.GetContractsAsync(null, null, ContractStatus.Active);
+        if (!contracts.Succeeded || contracts.Value is null)
+        {
+            ModelState.AddModelError(string.Empty, contracts.ErrorMessage ?? "Active contracts could not be loaded from the API.");
+            viewModel.ContractOptions = Enumerable.Empty<SelectListItem>();
+            return viewModel;
+        }
+
+        viewModel.ContractOptions = contracts.Value
+            .OrderBy(contract => contract.Client?.Name)
             .Select(contract => new SelectListItem(
                 $"{contract.Client!.Name} - {contract.ServiceLevel} ({contract.ContractType})",
                 contract.ContractId.ToString()))
-            .ToListAsync();
+            .ToList();
 
         return viewModel;
     }

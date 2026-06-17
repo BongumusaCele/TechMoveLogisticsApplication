@@ -1,27 +1,29 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TechMoveLogisticsApplication.Data;
+using TechMoveLogisticsApplication.Models;
+using TechMoveLogisticsApplication.Services.Api;
 
 namespace TechMoveLogisticsApplication.Controllers;
 
 [Authorize(Roles = "Admin")]
 public class AuditController : Controller
 {
-    private readonly ApplicationDbContext _context;
+    private readonly ITechMoveApiClient _apiClient;
 
-    public AuditController(ApplicationDbContext context)
+    public AuditController(ITechMoveApiClient apiClient)
     {
-        _context = context;
+        _apiClient = apiClient;
     }
 
     public async Task<IActionResult> Index()
     {
-        var logs = await _context.AuditLogs
-            .OrderByDescending(log => log.CreatedAt)
-            .Take(100)
-            .ToListAsync();
+        var result = await _apiClient.GetAuditLogsAsync();
+        if (!result.Succeeded || result.Value is null)
+        {
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Audit logs could not be loaded from the API.");
+            return View(Enumerable.Empty<AuditLog>());
+        }
 
-        return View(logs);
+        return View(result.Value);
     }
 }

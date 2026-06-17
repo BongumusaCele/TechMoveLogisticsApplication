@@ -1,58 +1,44 @@
+using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Diagnostics;
-using TechMoveLogisticsApplication.Data;
 using TechMoveLogisticsApplication.Models;
+using TechMoveLogisticsApplication.Services.Api;
 using TechMoveLogisticsApplication.ViewModels;
 
-namespace TechMoveLogisticsApplication.Controllers
+namespace TechMoveLogisticsApplication.Controllers;
+
+public class HomeController : Controller
 {
-    public class HomeController : Controller
+    private readonly ITechMoveApiClient _apiClient;
+
+    public HomeController(ITechMoveApiClient apiClient)
     {
-        private readonly ApplicationDbContext _context;
+        _apiClient = apiClient;
+    }
 
-        public HomeController(ApplicationDbContext context)
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Index()
+    {
+        var result = await _apiClient.GetDashboardAsync();
+        if (!result.Succeeded || result.Value is null)
         {
-            _context = context;
+            ModelState.AddModelError(string.Empty, result.ErrorMessage ?? "Dashboard data could not be loaded from the API.");
+            return View(new DashboardViewModel());
         }
 
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Index()
-        {
-            var viewModel = new DashboardViewModel
-            {
-                ClientCount = await _context.Clients.CountAsync(),
-                ActiveContractCount = await _context.Contracts.CountAsync(contract => contract.Status == ContractStatus.Active),
-                ServiceRequestCount = await _context.ServiceRequests.CountAsync(),
-                InvoiceCount = await _context.Invoices.CountAsync(),
-                RecentContracts = await _context.Contracts
-                    .Include(contract => contract.Client)
-                    .OrderByDescending(contract => contract.CreatedAt)
-                    .Take(5)
-                    .ToListAsync(),
-                RecentRequests = await _context.ServiceRequests
-                    .Include(request => request.Contract)
-                    .ThenInclude(contract => contract!.Client)
-                    .OrderByDescending(request => request.CreatedAt)
-                    .Take(5)
-                    .ToListAsync()
-            };
+        return View(result.Value);
+    }
 
-            return View(viewModel);
-        }
+    [Authorize]
+    public IActionResult Privacy()
+    {
+        return View();
+    }
 
-        [Authorize]
-        public IActionResult Privacy()
-        {
-            return View();
-        }
-
-        [AllowAnonymous]
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        }
+    [AllowAnonymous]
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult Error()
+    {
+        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
 }
